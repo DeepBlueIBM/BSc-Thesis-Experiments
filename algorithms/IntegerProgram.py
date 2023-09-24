@@ -29,6 +29,7 @@ class IP:
             constraint = lpSum(constraint_terms) >= self.d[j]
             prob += constraint
 
+        pulp.LpSolverDefault.msg = 0
         prob.solve()
 
         if LpStatus[prob.status] != 'Optimal':
