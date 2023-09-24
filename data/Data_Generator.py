@@ -1,5 +1,39 @@
+import copy
 import random
 import math
+
+
+def create_costs(contributions, intervals):
+    costs = [0] * len(intervals)
+    eighty_percent_size = int(len(intervals) * 0.8)
+    random_indexes = random.sample(range(len(intervals)), eighty_percent_size)
+    random_indexes.sort()
+    # print(random_indexes)
+    max_costs = 0
+    for i in random_indexes:
+        number_of_tasks = intervals[i][1] - intervals[i][0] + 1
+        costs[i] = random.randint(math.ceil(contributions[i] * number_of_tasks / 3),
+                                  contributions[i] * number_of_tasks)
+        if contributions[i] * number_of_tasks > max_costs:
+            max_costs = contributions[i] * number_of_tasks
+    # print("max costs is: ", max_costs)
+    # print(costs)
+    for i in range(len(costs)):
+        if costs[i] == 0:
+            costs[i] = random.randint(1, max_costs)
+    # print(costs)
+    return costs
+
+
+def task_one_contributions(intervals, contributions, demands, l1):
+    counter = -1
+    max_contribution = 0
+    for i in intervals:
+        counter += 1
+        if i[0] == 1:
+            contributions[counter] = random.randint(1, math.ceil(4 * demands[0] / l1))
+            max_contribution = max(contributions)
+    return contributions, max_contribution
 
 
 class DataGenerator:
@@ -35,42 +69,12 @@ class DataGenerator:
             demands.append(random_demand)
         return demands
 
-    def task_one_contributions(self, intervals, contributions, demands, l1):
-        counter = -1
-        max_contribution = 0
-        for i in intervals:
-            counter += 1
-            if i[0] == 1:
-                contributions[counter] = random.randint(1, math.ceil(4 * demands[0] / l1))
-                max_contribution = max(contributions)
-        return contributions, max_contribution
-
-    def create_costs(self, contributions, intervals):
-        costs = [0] * len(intervals)
-        eighty_percent_size = int(len(intervals) * 0.8)
-        random_indexes = random.sample(range(len(intervals)), eighty_percent_size)
-        random_indexes.sort()
-        # print(random_indexes)
-        max_costs = 0
-        for i in random_indexes:
-            number_of_tasks = intervals[i][1] - intervals[i][0] + 1
-            costs[i] = random.randint(math.ceil(contributions[i] * number_of_tasks / 3),
-                                      contributions[i] * number_of_tasks)
-            if contributions[i] * number_of_tasks > max_costs:
-                max_costs = contributions[i] * number_of_tasks
-        # print("max costs is: ", max_costs)
-        # print(costs)
-        for i in range(len(costs)):
-            if costs[i] == 0:
-                costs[i] = random.randint(1, max_costs)
-        # print(costs)
-        return costs
-
     def run(self):
 
         random.seed(self.seed)
         intervals = []
 
+        # SMALL WORKERS
         for _ in range(3 * self.num_tasks):
             random_task = random.randint(1, self.num_tasks)
             result = self.small_interval(random_task)
@@ -79,6 +83,7 @@ class DataGenerator:
         print("Result array:", intervals)
         print("size is: ", len(intervals))
 
+        # LARGE WORKERS
         large_workers = random.randint(0, math.ceil(3 * self.num_tasks / 20))
         print("number of large workers: ", large_workers)
 
@@ -153,81 +158,125 @@ class DataGenerator:
         print("Demands: ", demands)
 
         # CONTRIBUTIONS
-        contributions = [0] * len(intervals)
-        l1 = 0
-        for i in intervals:
-            if i[0] == 1:
-                l1 += 1
-        # print("λ1 is: ", l1)
+        flag = True
+        while flag:
+            contributions = [0] * len(intervals)
+            l1 = 0
+            for i in intervals:
+                if i[0] == 1:
+                    l1 += 1
+            print("λ1 is: ", l1)
 
-        # task 1 contribution
-        contributions, max_contribution = self.task_one_contributions(intervals, contributions, demands, l1)
-        # check if task 1 contribution is enough
-        while sum(contributions) < demands[0]:
-            self.task_one_contributions(intervals, contributions, demands, l1)
-        # print(contributions)
+            # task 1 contribution
+            contributions, max_contribution = task_one_contributions(intervals, contributions, demands, l1)
+            # check if task 1 contribution is enough
+            while sum(contributions) < demands[0]:
+                contributions, max_contribution = task_one_contributions(intervals, contributions, demands, l1)
+            print("Contributions are", contributions)
 
-        # rest of the tasks contribution (self.num_tasks +1)
-        for i in range(2, self.num_tasks + 1):
-            Qj = 0
-            first_counter = -1
-            for j in contributions:
-                first_counter += 1
-                if j != 0:
-                    if intervals[first_counter][0] <= i <= intervals[first_counter][1]:
-                        Qj += contributions[first_counter]
-            # print("Qj: ", Qj)
-            Qjnew = 2 * demands[i - 1] - Qj
-            # print("Qjnew", Qjnew)
-            if Qjnew <= 0:
-                second_counter = -1
-                new_max = 0
-                task_covered = 0
-                # while task_covered < demands[i - 1]:
+            #first_task_contribution = copy.deepcopy(contributions)
+
+            #contributions = copy.deepcopy(first_task_contribution)
+            #print("--------------------------------", first_task_contribution)
+            print("++++++++++++++++++++++++++++++++", contributions)
+            # rest of the tasks contribution (self.num_tasks +1)
+            for i in range(2, self.num_tasks + 1):
+                Qj = 0
+                # finding Qj
+                first_counter = -1
                 for j in contributions:
-                    second_counter += 1
-                    if j == 0:
-                        if intervals[second_counter][0] <= i <= intervals[second_counter][1]:
-                            if max_contribution < 1:
-                                max_contribution = 1
-                            contributions[second_counter] = max(random.randint(1, max_contribution), 1)
-                            # print("contribution: ", contributions[second_counter])
-                            task_covered += contributions[second_counter]
-                            if contributions[second_counter] > new_max:
-                                new_max = contributions[second_counter]
-                        # print("task_covered: ", task_covered)
-                # print("new_max is: ", new_max)
-                max_contribution = new_max
-                # print("New contributions: ", contributions)
-            else:
-                ljnew = 0
-                third_counter = -1
-                # print("----", i)
-                for k in intervals:
-                    third_counter += 1
-                    # print("+++", k[0], contributions[third_counter])
-                    if k[0] == i and contributions[third_counter] == 0:
-                        ljnew += 1
-                # print("ljnew is: ", ljnew)
-                fourth_counter = -1
-                new_max = 0
-                for j in contributions:
-                    fourth_counter += 1
-                    if j == 0:
-                        if intervals[fourth_counter][0] <= i <= intervals[fourth_counter][1]:
-                            contributions[fourth_counter] = random.randint(1, math.ceil(2 * Qjnew / ljnew))
-                            if contributions[fourth_counter] > new_max:
-                                new_max = contributions[fourth_counter]
-                # print("new_max is: ", new_max)
-                max_contribution = new_max
-                # print("New contributions: ", contributions)
-        print("Contributions: ", contributions)
+                    first_counter += 1
+                    if j != 0:
+                        if intervals[first_counter][0] <= i <= intervals[first_counter][1]:  # if task is covered
+                            Qj += contributions[first_counter]
+                # print("Qj: ", Qj)
+                Qjnew = 2 * demands[i - 1] - Qj  # + math.random(-2, 2)
+                # print("Qjnew", Qjnew)
 
+                if Qjnew <= 0:
+                    second_counter = -1
+                    new_max = 0
+                    task_covered = 0
+                    # while task_covered < demands[i - 1]:
+                    for j in contributions:
+                        second_counter += 1
+                        if j == 0:
+                            if intervals[second_counter][0] <= i <= intervals[second_counter][1]:
+                                if max_contribution < 1:
+                                    max_contribution = 1
+                                contributions[second_counter] = max(random.randint(1, max_contribution), 1)
+                                # print("contribution: ", contributions[second_counter])
+                                task_covered += contributions[second_counter]
+                                if contributions[second_counter] > new_max:
+                                    new_max = contributions[second_counter]
+                            # print("task_covered: ", task_covered)
+                    # print("new_max is: ", new_max)
+                    max_contribution = new_max
+                    # print("New contributions: ", contributions)
+                else:
+                    ljnew = 0
+                    third_counter = -1
+                    # print("----", i)
+                    for k in intervals:
+                        third_counter += 1
+                        # print("+++", k[0], contributions[third_counter])
+                        if k[0] == i and contributions[third_counter] == 0:
+                            ljnew += 1
+                    # print("ljnew is: ", ljnew)
+                    fourth_counter = -1
+                    new_max = 0
+                    for j in contributions:
+                        fourth_counter += 1
+                        if j == 0:
+                            if intervals[fourth_counter][0] <= i <= intervals[fourth_counter][1]:
+                                contributions[fourth_counter] = random.randint(1, math.ceil(2 * Qjnew / ljnew))
+                                if contributions[fourth_counter] > new_max:
+                                    new_max = contributions[fourth_counter]
+                    # print("new_max is: ", new_max)
+                    max_contribution = new_max
+                    # print("New contributions: ", contributions)
+
+            # Check if all tasks meet their demands
+            all_tasks_met_demands = True
+            for i in range(2, self.num_tasks + 1):
+                counter = -1
+                current_task_contribution = 0
+                for k in contributions:
+                    counter += 1
+                    if intervals[counter][0] <= i <= intervals[counter][1]:
+                        current_task_contribution += k
+                if current_task_contribution < demands[i - 1]:
+                    print(current_task_contribution, demands[i - 1])
+                    all_tasks_met_demands = False
+                    break
+            print("Contributions: ", contributions)
+            # If all tasks meet their demands, exit the loop
+            if all_tasks_met_demands:
+                flag = False
+                break
+
+            """
+            counter = -1
+            current_task_contribution = 0
+            for k in contributions:
+                counter += 1
+                if k != 0:
+                    if intervals[counter][0] <= i <= intervals[counter][1]:
+                        current_task_contribution += k
+            print("current_task_contribution: ", current_task_contribution)
+
+            if current_task_contribution <= demands[i - 1]:
+                print("HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+            print("Contributions: ", contributions)
+            """
         # COSTS
-        costs = self.create_costs(contributions, intervals)
+        costs = create_costs(contributions, intervals)
         print("Costs: ", costs)
+        print(" ")
+        print("----------------------")
 
         return intervals, demands, contributions, costs
+
 
 """
 num_tasks = 10
