@@ -1,6 +1,5 @@
-# -- pathname x_workers_x_tasks
+# -- pathname x_tasks
 import pandas as pd
-import xlsxwriter
 import argparse
 import time
 
@@ -16,35 +15,37 @@ start_time = time.time()
 experimental_results = []
 
 
-def save_results(cost, del_cos, opt_cost, path_name, file_name, num_workers, num_tasks):
+def save_results_to_csv(cost, del_cos, opt_cost, path_name, file_name, num_workers, num_tasks, delta, max_delta_index,
+                        alg_set, opt_set, del_set):
     experimental_results.append(
         {'dataset': path_name, 'instance': file_name, 'num_workers': num_workers, 'num_tasks': num_tasks,
+         'delta': delta, 'max_delta_index': max_delta_index, 'algorithm_solution_set': alg_set,
+         'deletion_solution_set': del_set, 'optimal_solution_set': opt_set,
          'algorithm_cost': cost, 'deletion_cost': del_cos, 'optimal_cost': opt_cost})
 
-    if len(experimental_results) % 10 == 0:
+    if len(experimental_results) % 20 == 0:
         results_path_name = 'results_for_' + path_name
 
-        fieldnames = ['dataset', 'instance', 'num_workers', 'num_tasks', 'algorithm_cost', 'deletion_cost',
-                      'optimal_cost']
-
-        if not results_path_name.endswith('.xlsx'):
-            results_path_name += '.xlsx'
+        if not results_path_name.endswith('.csv'):
+            results_path_name += '.csv'
 
         save_path = 'results'
         full_file_path = os.path.join(save_path, results_path_name)
-        workbook = xlsxwriter.Workbook(full_file_path)
-        worksheet = workbook.add_worksheet()
-        bold_format = workbook.add_format({'bold': True})
 
-        for col_num, field in enumerate(fieldnames):
-            worksheet.write(0, col_num, field, bold_format)
+        fieldnames = ['dataset', 'instance', 'num_workers', 'num_tasks', 'delta', 'max_delta_index',
+                      'algorithm_solution_set', 'deletion_solution_set', 'optimal_solution_set', 'algorithm_cost',
+                      'deletion_cost', 'optimal_cost']
 
-        for row_num, result in enumerate(experimental_results):
-            for col_num, field in enumerate(fieldnames):
-                worksheet.write(row_num + 1, col_num, result[field])
+        with open(full_file_path, mode='w', newline='') as csv_file:
+            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 
-        workbook.close()
+            writer.writeheader()  # Write the header row
 
+            for result in experimental_results:
+                writer.writerow(result)
+
+        print("Results saved to:", full_file_path)
+        """
         data = pd.DataFrame(experimental_results)
         grouped_data = data.groupby(['num_workers', 'num_tasks']).agg({
             'algorithm_cost': 'mean',
@@ -64,6 +65,7 @@ def save_results(cost, del_cos, opt_cost, path_name, file_name, num_workers, num
 
         merged_data.to_excel(results_path, index=False)
         print(merged_data)
+        """
 
 
 class AlgorithmExecutioner:
@@ -74,12 +76,12 @@ class AlgorithmExecutioner:
         self.P3 = IP(bidding_profile, contribution, demand)
 
     def run(self, path_name, file_name):
-        num_workers = int(path_name.split('_')[0].split('workers')[0])
-        # num_tasks = int(path_name.split('_')[2].split('tasks')[0])
+        num_tasks = int(path_name.split('_')[0].split('tasks')[0])
+        #num_workers = 41
 
         sol, cost = self.P1.run()
         if sol != 0 and cost != 0:
-            order, final_sol, final_cos, delta, max_delta_index = self.P2.run()
+            order, final_sol, final_cos, delta, max_delta_index, num_workers = self.P2.run()
             opt_values, opt_cost = self.P3.solve()
             print("---------- Solution for instance: ", file_name, "----------")
             print("LMIS solution is:", sol)
@@ -101,19 +103,11 @@ class AlgorithmExecutioner:
                 print("Optimal cost:", opt_cost)
         else:
             print("Infeasible Solution for instance: ", file_name)
+            final_cos, opt_cost, delta, max_delta_index, final_sol, opt_values, num_workers = 0, 0, 0, 0, 0, 0, 0
 
-        #print("________________", opt_values, opt_cost)
-        #for i in range(len(opt_values)):
-        #    if opt_values[i] > 0:
-        #        opt_values[i] = i + 1
-
-        #opt_values = [i for i in opt_values if i != 0]
-
-        #if opt_values is not None and opt_cost is not None:
-            #print("Optimal selection is:", opt_values)
-            #print("Optimal cost:", opt_cost)
-
-        # save_results(cost, final_cos, opt_cost, path_name, file_name, num_workers, num_tasks)
+        # print("++++++++++++++++++++++++++++++++++++++++++", num_workers)
+        save_results_to_csv(cost, final_cos, opt_cost, path_name, file_name, num_workers, num_tasks,
+                            delta, max_delta_index, sol, opt_values, final_sol)
 
 
 parser = argparse.ArgumentParser(description='Algorithm Execution')
