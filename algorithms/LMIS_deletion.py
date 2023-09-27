@@ -1,7 +1,7 @@
 """
 Constructing the LMIS-LR algorithm from Algorithm 1
 ∆-approximation (where ∆ = maximum number of workers on the same task)
-∆ = maxj=1,...,m |Nj (I)| (m = #of tasks, N = set of bidders who can contribute to task j.
+∆ = maxj=1,...,m |Nj (I)| (m = #of tasks, N = set of bidders who can contribute to task j).
 ∆ is upper bounded by n (number of total workers)
 """
 
@@ -127,6 +127,22 @@ class LMIS:
     def get_r_max(self):  # line 2
         return self.r_max
 
+    def calculate_Delta(self):
+        """
+        Delta = maxj=1,...,m |Nj (I)| (m = #of tasks, N = set of bidders who can contribute to task j).
+        Delta is upper bounded by n (number of total workers)
+        :return:
+        """
+        delta = 0
+        max_delta = len(self.intervals) * [0]
+        for i in self.intervals:
+            for j in range(i[0], i[1] + 1):
+                max_delta[j - 1] += 1
+        delta = max(max_delta)
+        max_delta_index = max_delta.index(delta)
+
+        return delta, max_delta_index + 1
+
     def run(self):
         """
         Algorithm Execution
@@ -210,4 +226,6 @@ class LMIS:
         for j in final_solution:
             final_cost += self.penalty[j - 1]
 
-        return selection_order, final_solution, final_cost
+        delta, max_delta_index = self.calculate_Delta()
+
+        return selection_order, final_solution, final_cost, delta, max_delta_index, len(self.intervals)
