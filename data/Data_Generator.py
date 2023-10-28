@@ -12,8 +12,10 @@ def create_costs(contributions, intervals):
     max_costs = 0
     for i in random_indexes:
         number_of_tasks = intervals[i][1] - intervals[i][0] + 1
-        costs[i] = random.randint(math.ceil(contributions[i] * number_of_tasks / 3),
+        costs[i] = random.randint(math.floor(contributions[i] * number_of_tasks / 3),
                                   contributions[i] * number_of_tasks)
+        # print("Contribution of this i:",contributions[i])
+        # print("Ceiling is:_______________________________________________________________________________________", contributions[i] * number_of_tasks)
         if contributions[i] * number_of_tasks > max_costs:
             max_costs = contributions[i] * number_of_tasks
     # print("max costs is: ", max_costs)
@@ -25,13 +27,13 @@ def create_costs(contributions, intervals):
     return costs
 
 
-def task_one_contributions(intervals, contributions, demands, l1):
+def task_one_contributions(intervals, contributions, demands, l1, while_counter=0):
     counter = -1
     max_contribution = 0
     for i in intervals:
         counter += 1
         if i[0] == 1:
-            contributions[counter] = random.randint(1, math.ceil(4 * demands[0] / l1))
+            contributions[counter] = random.randint(1, math.ceil(4 * demands[0] / l1) + while_counter)
             max_contribution = max(contributions)
     return contributions, max_contribution
 
@@ -90,8 +92,11 @@ class DataGenerator:
         large_interval_map = {
             10: 5,
             20: 8,
+            35: 10,
             50: 12,
+            65: 14,
             75: 16,
+            85: 18,
             100: 20,
         }
 
@@ -158,6 +163,7 @@ class DataGenerator:
         print("Demands: ", demands)
 
         # CONTRIBUTIONS
+        while_counter = 0
         flag = True
         while flag:
             contributions = [0] * len(intervals)
@@ -168,10 +174,10 @@ class DataGenerator:
             print("λ1 is: ", l1)
 
             # task 1 contribution
-            contributions, max_contribution = task_one_contributions(intervals, contributions, demands, l1)
+            contributions, max_contribution = task_one_contributions(intervals, contributions, demands, l1, while_counter)
             # check if task 1 contribution is enough
             while sum(contributions) < demands[0]:
-                contributions, max_contribution = task_one_contributions(intervals, contributions, demands, l1)
+                contributions, max_contribution = task_one_contributions(intervals, contributions, demands, l1, while_counter)
             print("Contributions are", contributions)
 
             #first_task_contribution = copy.deepcopy(contributions)
@@ -204,7 +210,7 @@ class DataGenerator:
                             if intervals[second_counter][0] <= i <= intervals[second_counter][1]:
                                 if max_contribution < 1:
                                     max_contribution = 1
-                                contributions[second_counter] = max(random.randint(1, max_contribution), 1)
+                                contributions[second_counter] = max(random.randint(1, max_contribution + while_counter), 1)
                                 # print("contribution: ", contributions[second_counter])
                                 task_covered += contributions[second_counter]
                                 if contributions[second_counter] > new_max:
@@ -229,13 +235,15 @@ class DataGenerator:
                         fourth_counter += 1
                         if j == 0:
                             if intervals[fourth_counter][0] <= i <= intervals[fourth_counter][1]:
-                                contributions[fourth_counter] = random.randint(1, math.ceil(2 * Qjnew / ljnew))
+                                contributions[fourth_counter] = random.randint(1, math.ceil(2 * Qjnew / ljnew) +
+                                                                               while_counter)
                                 if contributions[fourth_counter] > new_max:
                                     new_max = contributions[fourth_counter]
                     # print("new_max is: ", new_max)
                     max_contribution = new_max
                     # print("New contributions: ", contributions)
 
+            while_counter += 1
             # Check if all tasks meet their demands
             all_tasks_met_demands = True
             for i in range(2, self.num_tasks + 1):
@@ -247,6 +255,7 @@ class DataGenerator:
                         current_task_contribution += k
                 if current_task_contribution < demands[i - 1]:
                     print(current_task_contribution, demands[i - 1])
+                    print(demands)
                     all_tasks_met_demands = False
                     break
             print("Contributions: ", contributions)
