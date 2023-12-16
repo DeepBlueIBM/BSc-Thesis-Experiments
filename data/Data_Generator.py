@@ -180,10 +180,6 @@ class DataGenerator:
                 contributions, max_contribution = task_one_contributions(intervals, contributions, demands, l1, while_counter)
             print("Contributions are", contributions)
 
-            #first_task_contribution = copy.deepcopy(contributions)
-
-            #contributions = copy.deepcopy(first_task_contribution)
-            #print("--------------------------------", first_task_contribution)
             print("++++++++++++++++++++++++++++++++", contributions)
             # rest of the tasks contribution (self.num_tasks +1)
             for i in range(2, self.num_tasks + 1):
@@ -215,8 +211,6 @@ class DataGenerator:
                                 task_covered += contributions[second_counter]
                                 if contributions[second_counter] > new_max:
                                     new_max = contributions[second_counter]
-                            # print("task_covered: ", task_covered)
-                    # print("new_max is: ", new_max)
                     max_contribution = new_max
                     # print("New contributions: ", contributions)
                 else:
@@ -263,33 +257,15 @@ class DataGenerator:
             if all_tasks_met_demands:
                 flag = False
                 break
-
-            """
-            counter = -1
-            current_task_contribution = 0
-            for k in contributions:
-                counter += 1
-                if k != 0:
-                    if intervals[counter][0] <= i <= intervals[counter][1]:
-                        current_task_contribution += k
-            print("current_task_contribution: ", current_task_contribution)
-
-            if current_task_contribution <= demands[i - 1]:
-                print("HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
-            print("Contributions: ", contributions)
-            """
+                
         # COSTS
         costs = create_costs(contributions, intervals)
         print("Costs: ", costs)
         print(" ")
         print("----------------------")
 
+        # NEW ADDITION, DIVIDE COSTS BY 100
+        #costs = [cost / 100 for cost in costs]
+        #print("Costs: ", costs)
+
         return intervals, demands, contributions, costs
-
-
-"""
-num_tasks = 10
-seed = 42
-data_generator = DataGenerator(num_tasks, seed)
-data_generator.run()
-"""
