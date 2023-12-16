@@ -12,7 +12,7 @@ import os
 
 
 def save_data_to_csv(num_tasks, instance_number):
-    data_generator = DataGenerator(num_tasks, 47 + instance_number)  # seed
+    data_generator = DataGenerator(num_tasks, 16 + instance_number)  # seed, change for different outputs
     intervals, demands, contributions, costs = data_generator.run()
 
     data_rows = []
@@ -25,7 +25,7 @@ def save_data_to_csv(num_tasks, instance_number):
 
     num_tasks_str = str(num_tasks).replace(" ", "_")
     directory = f"data/{num_tasks_str}_tasks"
-    os.makedirs(directory, exist_ok=True)  # Create the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)
 
     file_name = f"data/{num_tasks_str}_tasks/instance{instance_number:02d}.csv"
     with io.open(file_name, "w", newline="", encoding="utf-8") as f:
